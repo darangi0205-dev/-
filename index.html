@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>큐알메이커 (QR Maker) - 프리미엄 QR 코드 생성기</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- QR Code Styling Library (Advanced custom QR codes) -->
+  <script src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Pretendard', sans-serif;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="bg-gradient-to-tr from-indigo-600 to-violet-500 p-2 rounded-xl text-white shadow-md shadow-indigo-100">
+          <i data-lucide="qr-code" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">QR Maker</h1>
+          <p class="text-xs text-slate-400 font-medium">프리미엄 QR 코드 스튜디오</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-full font-semibold">v2.5 Pro</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8">
+    
+    <!-- Left Column: Controls (60% Width on Large Screens) -->
+    <div class="w-full lg:w-[60%] flex flex-col gap-6">
+      
+      <!-- 1. Data Type Selector Tabs -->
+      <div class="bg-white p-2 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap gap-1">
+        <button onclick="switchTab('url')" id="tab-url" class="tab-btn flex-1 min-w-[90px] flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-xl text-sm font-semibold transition-all bg-indigo-600 text-white shadow-sm shadow-indigo-100">
+          <i data-lucide="link-2" class="w-4 h-4"></i>
+          <span>URL / 텍스트</span>
+        </button>
+        <button onclick="switchTab('wifi')" id="tab-wifi" class="tab-btn flex-1 min-w-[90px] flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-xl text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-50">
+          <i data-lucide="wifi" class="w-4 h-4"></i>
+          <span>Wi-Fi</span>
+        </button>
+        <button onclick="switchTab('vcard')" id="tab-vcard" class="tab-btn flex-1 min-w-[90px] flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-xl text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-50">
+          <i data-lucide="user" class="w-4 h-4"></i>
+          <span>명함 (vCard)</span>
+        </button>
+        <button onclick="switchTab('email')" id="tab-email" class="tab-btn flex-1 min-w-[90px] flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-xl text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-50">
+          <i data-lucide="mail" class="w-4 h-4"></i>
+          <span>이메일</span>
+        </button>
+        <button onclick="switchTab('sms')" id="tab-sms" class="tab-btn flex-1 min-w-[90px] flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-xl text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-50">
+          <i data-lucide="message-square" class="w-4 h-4"></i>
+          <span>SMS</span>
+        </button>
+      </div>
+
+      <!-- 2. Dynamic Input Fields Card -->
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <h3 class="text-md font-bold text-slate-900 mb-4 flex items-center gap-2">
+          <span class="w-1.5 h-4 bg-indigo-600 rounded-full"></span>
+          QR 코드에 담을 정보 입력
+        </h3>
+
+        <!-- Tab: URL / Text -->
+        <div id="panel-url" class="tab-panel">
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">대상 웹사이트 주소 또는 일반 텍스트</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <i data-lucide="globe" class="w-5 h-5"></i>
+            </div>
+            <input type="text" id="input-url-text" oninput="debouncedGenerate()" placeholder="https://example.com 또는 텍스트를 입력하세요" class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium transition-all">
+          </div>
+          <p class="text-xs text-slate-400 mt-2">입력한 즉시 우측 미리보기 QR 코드가 실시간 업데이트됩니다.</p>
+        </div>
+
+        <!-- Tab: Wi-Fi -->
+        <div id="panel-wifi" class="tab-panel hidden space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">네트워크 이름 (SSID)</label>
+              <input type="text" id="input-wifi-ssid" oninput="debouncedGenerate()" placeholder="Wi-Fi 이름을 입력하세요" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium transition-all">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">비밀번호</label>
+              <input type="password" id="input-wifi-pass" oninput="debouncedGenerate()" placeholder="비밀번호를 입력하세요" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium transition-all">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">보안 설정</label>
+              <select id="input-wifi-type" onchange="generateQR()" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium transition-all">
+                <option value="WPA">WPA/WPA2 (권장)</option>
+                <option value="WEP">WEP</option>
+                <option value="nopass">보안 없음 (Open)</option>
+              </select>
+            </div>
+            <div class="flex items-center pt-6">
+              <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="input-wifi-hidden" onchange="generateQR()" class="sr-only peer">
+                <div class="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                <span class="ms-3 text-sm font-medium text-slate-600">숨겨진 네트워크 (Hidden SSID)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Contact (vCard) -->
+        <div id="panel-vcard" class="tab-panel hidden space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">이름 (First Name)</label>
+              <input type="text" id="input-vcard-first" oninput="debouncedGenerate()" placeholder="홍길동" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium transition-all">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">전화번호</label>
+              <input type="text" id="input-vcard-tel" oninput="debouncedGenerate()" placeholder="010-1234-5678" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium transition-all">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">이메일</label>
+              <input type="email" id="input-vcard-email" oninput="debouncedGenerate()" placeholder="name@company.com" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium transition-all">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">회사 / 조직명</label>
+              <input type="text" id="input-vcard-org" oninput="debouncedGenerate()" placeholder="(주)스마트컴퍼니" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium transition-all">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">직책</label>
+              <input type="text" id="input-vcard-title" oninput="debouncedGenerate()" placeholder="팀장 / 매니저" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium transition-all">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">웹사이트</label>
+              <input type="text" id="input-vcard-url" oninput="debouncedGenerate()" placeholder="https://mywebsite.com" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium transition-all">
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Email -->
+        <div id="panel-email" class="tab-panel hidden space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">받는 사람 이메일</label>
+              <input type="email" id="input-email-to" oninput="debouncedGenerate()" placeholder="receiver@example.com" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium transition-all">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">메일 제목</label>
+              <input type="text" id="input-email-sub" oninput="debouncedGenerate()" placeholder="이메일 제목을 입력하세요" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium transition-all">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">메일 본문 내용</label>
+            <textarea id="input-email-body" oninput="debouncedGenerate()" rows="3" placeholder="스캔 시 자동으로 채워질 메시지 본문입니다." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium transition-all"></textarea>
+          </div>
+        </div>
+
+        <!-- Tab: SMS -->
+        <div id="panel-sms" class="tab-panel hidden space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">수신자 전화번호</label>
+              <input type="text" id="input-sms-tel" oninput="debouncedGenerate()" placeholder="010-1234-5678" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium transition-all">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">메시지 본문 내용</label>
+            <textarea id="input-sms-body" oninput="debouncedGenerate()" rows="3" placeholder="스캔 시 자동으로 작성될 문자 메시지입니다." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium transition-all"></textarea>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 3. Styling / Customization Panel -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        
+        <!-- Accordion Header: Styles -->
+        <button onclick="toggleSection('style-section')" class="w-full px-6 py-4 border-b border-slate-100 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+              <i data-lucide="palette" class="w-4 h-4"></i>
+            </div>
+            <div class="text-left">
+              <h4 class="font-bold text-slate-900 text-sm">디자인 & 스타일 커스텀</h4>
+              <p class="text-xs text-slate-400">도트 형태, 눈양식, 색상 커스텀</p>
+            </div>
+          </div>
+          <i data-lucide="chevron-down" id="arrow-style-section" class="w-5 h-5 text-slate-400 transition-transform"></i>
+        </button>
+
+        <!-- Accordion Content: Styles -->
+        <div id="content-style-section" class="p-6 space-y-6">
+          
+          <!-- Color Presets -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">빠른 테마 프리셋</label>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="applyPreset('#4f46e5', '#ffffff', 'rounded')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 text-xs font-semibold transition-all">
+                <span class="w-3.5 h-3.5 rounded-full bg-indigo-600"></span>클래식 블루
+              </button>
+              <button onclick="applyPreset('#16a34a', '#ffffff', 'dots')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 text-xs font-semibold transition-all">
+                <span class="w-3.5 h-3.5 rounded-full bg-green-600"></span>자연 그린
+              </button>
+              <button onclick="applyPreset('#ea580c', '#ffffff', 'extra-rounded')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 text-xs font-semibold transition-all">
+                <span class="w-3.5 h-3.5 rounded-full bg-orange-600"></span>모던 오렌지
+              </button>
+              <button onclick="applyPreset('#0f172a', '#f8fafc', 'square')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 text-xs font-semibold transition-all">
+                <span class="w-3.5 h-3.5 rounded-full bg-slate-900"></span>다크 모드
+              </button>
+            </div>
+          </div>
+
+          <!-- Grid: Colors & Elements Shape -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Colors Selection -->
+            <div class="space-y-4">
+              <h5 class="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2">색상 설정</h5>
+              
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-slate-600">QR 코드 색상 (Foreground)</span>
+                <div class="flex items-center gap-2">
+                  <input type="color" id="style-fg-color" value="#4f46e5" oninput="generateQR()" class="w-8 h-8 rounded-lg cursor-pointer border-0 bg-transparent">
+                  <span id="fg-val" class="text-xs font-mono bg-slate-100 px-2 py-1 rounded">#4f46e5</span>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-slate-600">배경 색상 (Background)</span>
+                <div class="flex items-center gap-2">
+                  <input type="color" id="style-bg-color" value="#ffffff" oninput="generateQR()" class="w-8 h-8 rounded-lg cursor-pointer border-0 bg-transparent">
+                  <span id="bg-val" class="text-xs font-mono bg-slate-100 px-2 py-1 rounded">#ffffff</span>
+                </div>
+              </div>
+
+              <!-- Advanced: Gradient Toggle -->
+              <div class="space-y-2">
+                <label class="inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="style-use-gradient" onchange="toggleGradientFields()" class="sr-only peer">
+                  <div class="relative w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                  <span class="ms-3 text-xs font-medium text-slate-600">그라데이션 전경색 적용</span>
+                </label>
+                
+                <div id="gradient-controls" class="hidden grid grid-cols-2 gap-3 pl-12">
+                  <div>
+                    <label class="block text-[10px] text-slate-400 font-bold mb-1">그라데이션 끝 색상</label>
+                    <input type="color" id="style-fg-color-end" value="#a855f7" oninput="generateQR()" class="w-full h-8 rounded-lg cursor-pointer border border-slate-200 bg-transparent">
+                  </div>
+                  <div>
+                    <label class="block text-[10px] text-slate-400 font-bold mb-1">방향</label>
+                    <select id="style-gradient-dir" onchange="generateQR()" class="w-full text-xs px-2 h-8 bg-slate-50 border border-slate-200 rounded-lg">
+                      <option value="linear">선형 (Linear)</option>
+                      <option value="radial">원형 (Radial)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dot / Eye Shapes -->
+            <div class="space-y-4">
+              <h5 class="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2">모양 패턴</h5>
+
+              <div>
+                <label class="block text-xs text-slate-500 font-semibold mb-2">QR 코드 내부 도트 스타일</label>
+                <select id="style-dot-type" onchange="generateQR()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm">
+                  <option value="rounded">둥글게 (Rounded)</option>
+                  <option value="dots">원형 도트 (Dots)</option>
+                  <option value="classy">클래시 (Classy)</option>
+                  <option value="classy-rounded">클래시 라운드 (Classy Rounded)</option>
+                  <option value="square" selected>정사각형 (Square)</option>
+                  <option value="extra-rounded">초광각 라운드 (Extra Rounded)</option>
+                </select>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs text-slate-500 font-semibold mb-2">코너 프레임 (Eye Out)</label>
+                  <select id="style-corner-type" onchange="generateQR()" class="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs">
+                    <option value="square" selected>기본 사각</option>
+                    <option value="dot">둥근 원</option>
+                    <option value="extra-rounded">부드러운 스퀘어</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-500 font-semibold mb-2">코너 중심점 (Eye In)</label>
+                  <select id="style-corner-dot-type" onchange="generateQR()" class="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs">
+                    <option value="square" selected>기본 사각</option>
+                    <option value="dot">둥근 원</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Size & Margin & Error Correction -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            <div>
+              <label class="block text-xs text-slate-500 font-semibold mb-1">사이즈 (오른쪽 캔버스)</label>
+              <input type="range" id="style-size" min="200" max="450" value="320" oninput="updateSizeText(this.value); generateQR();" class="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+              <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                <span>200px</span>
+                <span id="size-indicator" class="font-bold text-indigo-600">320px</span>
+                <span>450px</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs text-slate-500 font-semibold mb-1">바깥 여백 (Margin)</label>
+              <input type="range" id="style-margin" min="0" max="40" value="10" oninput="updateMarginText(this.value); generateQR();" class="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+              <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                <span>0px</span>
+                <span id="margin-indicator" class="font-bold text-indigo-600">10px</span>
+                <span>40px</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs text-slate-500 font-semibold mb-2">오류 복구율 (ECC)</label>
+              <select id="style-ecc" onchange="generateQR()" class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none text-xs">
+                <option value="L">L (7% 복구 - 간단성)</option>
+                <option value="M" selected>M (15% 복구 - 기본)</option>
+                <option value="Q">Q (25% 복구 - 안정)</option>
+                <option value="H">H (30% 복구 - 로고 삽입용 추천)</option>
+              </select>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 4. Logo Settings Accordion -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        
+        <!-- Accordion Header: Logo -->
+        <button onclick="toggleSection('logo-section')" class="w-full px-6 py-4 border-b border-slate-100 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+              <i data-lucide="image" class="w-4 h-4"></i>
+            </div>
+            <div class="text-left">
+              <h4 class="font-bold text-slate-900 text-sm">중앙 로고 추가</h4>
+              <p class="text-xs text-slate-400">QR 중심에 자사 아이콘/로고 삽입</p>
+            </div>
+          </div>
+          <i data-lucide="chevron-right" id="arrow-logo-section" class="w-5 h-5 text-slate-400 transition-transform"></i>
+        </button>
+
+        <!-- Accordion Content: Logo -->
+        <div id="content-logo-section" class="p-6 hidden space-y-4">
+          <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
+            <!-- File Input Panel -->
+            <div class="flex-1 w-full">
+              <label class="block text-xs text-slate-400 font-semibold mb-2">로고 이미지 업로드 (PNG / JPG 권장)</label>
+              <div class="flex items-center justify-center w-full">
+                <label for="logo-upload" class="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-200 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100/50 transition-colors">
+                  <div class="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center">
+                    <i data-lucide="upload-cloud" class="w-8 h-8 text-slate-400 mb-2"></i>
+                    <p class="text-xs text-slate-500 font-semibold">클릭하여 이미지 파일 열기</p>
+                    <p class="text-[10px] text-slate-400 mt-1">파일 용량이 너무 크면 QR 가독성이 떨어질 수 있습니다.</p>
+                  </div>
+                  <input id="logo-upload" type="file" accept="image/*" onchange="handleLogoUpload(event)" class="hidden">
+                </label>
+              </div>
+            </div>
+
+            <!-- Upload Preview & Adjustments -->
+            <div id="logo-adjustments-panel" class="hidden w-full md:w-48 flex flex-col gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-700">로고 미리보기</span>
+                <button onclick="clearLogo()" class="text-xs text-red-500 hover:text-red-700 font-semibold flex items-center gap-1">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>제거
+                </button>
+              </div>
+              
+              <div class="h-16 flex items-center justify-center bg-white rounded-lg border border-slate-200 overflow-hidden p-1">
+                <img id="logo-preview-img" class="max-h-full max-w-full object-contain" alt="Logo preview">
+              </div>
+
+              <!-- Logo Scale Slider -->
+              <div>
+                <label class="block text-[10px] text-slate-500 font-bold mb-1">로고 크기 비율</label>
+                <input type="range" id="logo-scale" min="0.05" max="0.35" step="0.01" value="0.15" oninput="generateQR()" class="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+              </div>
+
+              <!-- Draw background behind logo -->
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] text-slate-500 font-bold">로고 뒤 여백 제거</span>
+                <input type="checkbox" id="logo-clear-bg" checked onchange="generateQR()" class="w-3.5 h-3.5 accent-indigo-600">
+              </div>
+            </div>
+          </div>
+          <div class="p-3 bg-amber-50 rounded-lg border border-amber-100 text-[11px] text-amber-700 flex gap-2">
+            <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0 mt-0.5"></i>
+            <span>로고를 넣을 때는 정보 복구 및 인식 강도를 위해 <b>오류 복구율(ECC)을 H (30%)</b>로 설정하는 것을 적극 권장합니다.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Interactive Live Preview & Downloads (40% Width) -->
+    <div class="w-full lg:w-[40%] flex flex-col gap-6">
+      
+      <!-- Live Preview Card -->
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center sticky top-24">
+        <div class="w-full flex items-center justify-between border-b border-slate-100 pb-3 mb-6">
+          <span class="text-xs font-extrabold text-indigo-600 tracking-wider bg-indigo-50 px-2.5 py-1 rounded-full uppercase">Real-Time Canvas</span>
+          <div class="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>라이브 편집 중</span>
+          </div>
+        </div>
+
+        <!-- Canvas Container wrapper for premium border -->
+        <div class="relative bg-white p-4 rounded-3xl border border-slate-100 shadow-xl shadow-slate-100/50 flex items-center justify-center overflow-hidden min-h-[260px] min-w-[260px]">
+          <!-- Interactive QR Code Element -->
+          <div id="qr-container" class="flex justify-center items-center">
+            <!-- Rendered by qr-code-styling -->
+          </div>
+        </div>
+
+        <div class="w-full mt-6 space-y-3">
+          <p class="text-xs font-medium text-slate-400">카메라를 켜서 렌즈를 가져다 대면 즉시 인식됩니다.</p>
+          
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="downloadQR('png')" class="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-indigo-100 hover:shadow-indigo-200/50 transition-all text-sm">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              <span>PNG 다운로드</span>
+            </button>
+            <button onclick="downloadQR('svg')" class="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-slate-900/10 hover:shadow-slate-900/20 transition-all text-sm">
+              <i data-lucide="file-type" class="w-4 h-4"></i>
+              <span>SVG 다운로드</span>
+            </button>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 flex justify-between gap-2">
+            <button onclick="saveToHistory()" class="flex-1 flex items-center justify-center gap-1.5 border border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-bold py-2.5 px-3 rounded-lg text-xs transition-colors">
+              <i data-lucide="save" class="w-3.5 h-3.5"></i>
+              <span>스튜디오 히스토리에 저장</span>
+            </button>
+            <button onclick="copyToClipboard()" class="flex-1 flex items-center justify-center gap-1.5 border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold py-2.5 px-3 rounded-lg text-xs transition-colors">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              <span>QR 이미지 클립보드 복사</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- History / Dashboard Card -->
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <i data-lucide="history" class="w-4 h-4 text-slate-500"></i>
+            <span>최근 생성한 QR 목록</span>
+          </h3>
+          <button onclick="clearHistory()" class="text-xs text-slate-400 hover:text-red-500 font-semibold">전체 삭제</button>
+        </div>
+
+        <div id="history-container" class="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+          <!-- Dynamically Added -->
+          <div class="text-center py-6 text-xs text-slate-400" id="no-history-placeholder">
+            저장된 최근 QR 코드가 없습니다.<br>위에서 '히스토리에 저장'을 누르면 이곳에 보관됩니다.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Notification Toast -->
+  <div id="toast-message" class="fixed bottom-6 right-6 z-50 transform translate-y-16 opacity-0 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 transition-all duration-300">
+    <div class="p-1 rounded-full bg-indigo-500 text-white" id="toast-icon-container">
+      <i data-lucide="info" class="w-4 h-4" id="toast-icon"></i>
+    </div>
+    <span class="text-sm font-semibold" id="toast-text">안내 메시지가 전송되었습니다.</span>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-100 py-6 mt-12">
+    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400 space-y-2">
+      <p class="font-semibold text-slate-500">QR Maker - Premium Responsive Web Application</p>
+      <p>본 사이트에서 만드는 모든 QR 코드는 개인 정보 노출이 없으며 기기 내 브라우저에서 안전하게 직접 생성됩니다.</p>
+    </div>
+  </footer>
+
+  <!-- Script Logic -->
+  <script>
+    // State Variables
+    let currentTab = 'url';
+    let qrStylingInstance = null;
+    let qrDebounceTimeout = null;
+    let base64Logo = "";
+    let savedQRsList = [];
+
+    // Main App Initialization
+    window.addEventListener('DOMContentLoaded', () => {
+      // Setup Lucide icons first
+      lucide.createIcons();
+
+      // Initialize QR Code Instance
+      qrStylingInstance = new QRCodeStyling({
+        width: 320,
+        height: 320,
+        type: "svg",
+        data: "https://example.com",
+        dotsOptions: {
+          color: "#4f46e5",
+          type: "square"
+        },
+        backgroundOptions: {
+          color: "#ffffff"
+        },
+        imageOptions: {
+          crossOrigin: "anonymous",
+          margin: 6,
+          hideBackgroundDots: true
+        }
+      });
+
+      // Render to DOM
+      const qrContainer = document.getElementById("qr-container");
+      qrStylingInstance.append(qrContainer);
+
+      // Set default input URL
+      document.getElementById('input-url-text').value = window.location.href;
+
+      // Render initial QR
+      generateQR();
+      loadHistoryFromLocal();
+    });
+
+    // Handle Tab switching
+    function switchTab(tabId) {
+      currentTab = tabId;
+
+      // Update button state visually
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.className = "tab-btn flex-1 min-w-[90px] flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-xl text-sm font-semibold transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-50";
+      });
+
+      const activeBtn = document.getElementById(`tab-${tabId}`);
+      if (activeBtn) {
+        activeBtn.className = "tab-btn flex-1 min-w-[90px] flex flex-col sm:flex-row items-center justify-center gap-2 py-3 px-2 rounded-xl text-sm font-semibold transition-all bg-indigo-600 text-white shadow-sm shadow-indigo-100";
+      }
+
+      // Show and Hide proper content panels
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.add('hidden');
+      });
+      document.getElementById(`panel-${tabId}`).classList.remove('hidden');
+
+      // Re-generate QR for new tab format
+      generateQR();
+    }
+
+    // Toggle custom accordions
+    function toggleSection(sectionId) {
+      const panel = document.getElementById(`content-${sectionId}`);
+      const arrow = document.getElementById(`arrow-${sectionId}`);
+      
+      if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        arrow.style.transform = "rotate(180deg)";
+      } else {
+        panel.classList.add('hidden');
+        arrow.style.transform = "rotate(0deg)";
+      }
+    }
+
+    // Debounce to improve real-time typing performance
+    function debouncedGenerate() {
+      clearTimeout(qrDebounceTimeout);
+      qrDebounceTimeout = setTimeout(() => {
+        generateQR();
+      }, 250);
+    }
+
+    // Formats and builds the exact payload text based on current active tab
+    function getQRDataPayload() {
+      switch (currentTab) {
+        case 'url':
+          const textVal = document.getElementById('input-url-text').value.trim();
+          return textVal ? textVal : "https://example.com";
+
+        case 'wifi':
+          const ssid = document.getElementById('input-wifi-ssid').value.trim();
+          const pass = document.getElementById('input-wifi-pass').value.trim();
+          const authType = document.getElementById('input-wifi-type').value;
+          const isHidden = document.getElementById('input-wifi-hidden').checked;
+          
+          if (!ssid) return "WIFI:S:SSID-Missing;T:nopass;;";
+          
+          // Pattern: WIFI:S:SSID;T:WPA;P:PASSWORD;H:true;;
+          return `WIFI:S:${ssid};T:${authType};P:${pass};H:${isHidden ? 'true' : 'false'};;`;
+
+        case 'vcard':
+          const first = document.getElementById('input-vcard-first').value.trim();
+          const tel = document.getElementById('input-vcard-tel').value.trim();
+          const email = document.getElementById('input-vcard-email').value.trim();
+          const org = document.getElementById('input-vcard-org').value.trim();
+          const title = document.getElementById('input-vcard-title').value.trim();
+          const url = document.getElementById('input-vcard-url').value.trim();
+
+          if (!first && !tel) return "연락처 정보를 입력하세요.";
+
+          return `BEGIN:VCARD\nVERSION:3.0\nFN:${first}\nN:;${first};;;\nTEL;TYPE=CELL:${tel}\nEMAIL;TYPE=INTERNET:${email}\nORG:${org}\nTITLE:${title}\nURL:${url}\nEND:VCARD`;
+
+        case 'email':
+          const to = document.getElementById('input-email-to').value.trim();
+          const sub = document.getElementById('input-email-sub').value.trim();
+          const body = document.getElementById('input-email-body').value.trim();
+
+          if (!to) return "이메일 주소를 입력하세요.";
+          return `mailto:${to}?subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`;
+
+        case 'sms':
+          const smsTel = document.getElementById('input-sms-tel').value.trim();
+          const smsBody = document.getElementById('input-sms-body').value.trim();
+
+          if (!smsTel) return "수신 전화를 입력하세요.";
+          return `smsto:${smsTel}:${smsBody}`;
+
+        default:
+          return "https://example.com";
+      }
+    }
+
+    // Updates style values displayed in text next to elements
+    function updateSizeText(val) {
+      document.getElementById('size-indicator').innerText = val + "px";
+    }
+    
+    function updateMarginText(val) {
+      document.getElementById('margin-indicator').innerText = val + "px";
+    }
+
+    // Handles quick presets
+    function applyPreset(fgColor, bgColor, dotType) {
+      document.getElementById('style-fg-color').value = fgColor;
+      document.getElementById('style-bg-color').value = bgColor;
+      document.getElementById('style-dot-type').value = dotType;
+      document.getElementById('style-use-gradient').checked = false;
+      toggleGradientFields();
+      generateQR();
+      showToast("테마 프리셋이 적용되었습니다!", "check-circle");
+    }
+
+    // Show/Hide gradient color inputs
+    function toggleGradientFields() {
+      const checked = document.getElementById('style-use-gradient').checked;
+      const gradCtrls = document.getElementById('gradient-controls');
+      if (checked) {
+        gradCtrls.classList.remove('hidden');
+      } else {
+        gradCtrls.classList.add('hidden');
+      }
+    }
+
+    // Base Generator function combining styling & layout data
+    function generateQR() {
+      if (!qrStylingInstance) return;
+
+      const payload = getQRDataPayload();
+      const qrSize = parseInt(document.getElementById('style-size').value) || 320;
+      const qrMargin = parseInt(document.getElementById('style-margin').value) || 10;
+      const eccLevel = document.getElementById('style-ecc').value;
+
+      const fgColor = document.getElementById('style-fg-color').value;
+      const bgColor = document.getElementById('style-bg-color').value;
+      const useGradient = document.getElementById('style-use-gradient').checked;
+
+      const dotType = document.getElementById('style-dot-type').value;
+      const cornerType = document.getElementById('style-corner-type').value;
+      const cornerDotType = document.getElementById('style-corner-dot-type').value;
+
+      // Update text indicators
+      document.getElementById('fg-val').innerText = fgColor;
+      document.getElementById('bg-val').innerText = bgColor;
+
+      // Construct styling configurations
+      const dotsOptions = {
+        type: dotType
+      };
+
+      if (useGradient) {
+        const fgColorEnd = document.getElementById('style-fg-color-end').value;
+        const gradDir = document.getElementById('style-gradient-dir').value;
+        dotsOptions.gradient = {
+          type: gradDir,
+          colorStops: [
+            { offset: 0, color: fgColor },
+            { offset: 1, color: fgColorEnd }
+          ]
+        };
+      } else {
+        dotsOptions.color = fgColor;
+        delete dotsOptions.gradient; // Remove any previous gradients
+      }
+
+      const qrOptions = {
+        width: qrSize,
+        height: qrSize,
+        data: payload,
+        margin: qrMargin,
+        qrOptions: {
+          errorCorrectionLevel: eccLevel
+        },
+        dotsOptions: dotsOptions,
+        backgroundOptions: {
+          color: bgColor
+        },
+        cornersSquareOptions: {
+          type: cornerType,
+          color: fgColor
+        },
+        cornersDotOptions: {
+          type: cornerDotType,
+          color: fgColor
+        }
+      };
+
+      // Add logo options if base64Logo exists
+      if (base64Logo) {
+        const logoScale = parseFloat(document.getElementById('logo-scale').value) || 0.15;
+        const clearBg = document.getElementById('logo-clear-bg').checked;
+        qrOptions.image = base64Logo;
+        qrOptions.imageOptions = {
+          crossOrigin: "anonymous",
+          margin: 4,
+          imageSizeFactor: logoScale,
+          hideBackgroundDots: clearBg
+        };
+      } else {
+        qrOptions.image = "";
+      }
+
+      qrStylingInstance.update(qrOptions);
+    }
+
+    // Handles Custom Logo Upload and converts to Base64
+    function handleLogoUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        base64Logo = e.target.result;
+
+        // Show adjustments panel and update preview
+        document.getElementById('logo-adjustments-panel').classList.remove('hidden');
+        document.getElementById('logo-preview-img').src = base64Logo;
+
+        // Set ECC to High automatically for robustness
+        document.getElementById('style-ecc').value = 'H';
+        
+        generateQR();
+        showToast("로고가 추가되었습니다. 안전한 스캔을 위해 오류 복구율을 H(30%)로 높였습니다.", "check-circle");
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Clears loaded logo
+    function clearLogo() {
+      base64Logo = "";
+      document.getElementById('logo-upload').value = "";
+      document.getElementById('logo-adjustments-panel').classList.add('hidden');
+      generateQR();
+      showToast("로고가 성공적으로 제거되었습니다.", "info");
+    }
+
+    // Download Handler
+    function downloadQR(format) {
+      if (!qrStylingInstance) return;
+      const filePrefix = "QR-Maker_" + currentTab + "_" + Date.now();
+      
+      qrStylingInstance.download({
+        name: filePrefix,
+        extension: format
+      });
+      showToast(`${format.toUpperCase()} 파일로 정상 다운로드 완료!`, "check-circle");
+    }
+
+    // Fallback Clipboard Copy
+    function copyToClipboard() {
+      // Find the SVG element generated inside qr-container
+      const container = document.getElementById('qr-container');
+      const svgElement = container.querySelector('svg');
+      
+      if (!svgElement) {
+        showToast("복사할 수 있는 이미지가 없습니다.", "alert-triangle");
+        return;
+      }
+
+      // Convert SVG to temporary Image to draw into Canvas
+      const svgString = new XMLSerializer().serializeToString(svgElement);
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      const DOMURL = window.URL || window.webkitURL || window;
+      const url = DOMURL.createObjectURL(svgBlob);
+      
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        
+        try {
+          // Fallback legacy copy
+          canvas.toBlob(function(blob) {
+            const item = new ClipboardItem({ "image/png": blob });
+            navigator.clipboard.write([item]).then(() => {
+              showToast("QR 이미지가 클립보드에 성공적으로 복사되었습니다!", "check-circle");
+            }, (error) => {
+              // Try document.execCommand method if standard API fails
+              showToast("브라우저 보안으로 인해 바로 복사가 거부되었습니다. 다운로드 기능을 이용해주세요.", "alert-triangle");
+            });
+          });
+        } catch (err) {
+          showToast("클립보드 복사를 지원하지 않는 환경입니다. 파일 다운로드를 사용해 주세요.", "alert-triangle");
+        }
+        DOMURL.revokeObjectURL(url);
+      };
+      img.src = url;
+    }
+
+    // Save To History Logic
+    function saveToHistory() {
+      const payload = getQRDataPayload();
+      const previewTitle = currentTab.toUpperCase() + ": " + (payload.length > 25 ? payload.substring(0, 25) + "..." : payload);
+      
+      // Keep a simplified summary object
+      const item = {
+        id: Date.now(),
+        tabType: currentTab,
+        title: previewTitle,
+        payload: payload,
+        createdTime: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+      };
+
+      savedQRsList.unshift(item); // insert at start
+      if (savedQRsList.length > 5) {
+        savedQRsList.pop(); // Keep maximum of 5 items
+      }
+
+      saveHistoryToLocal();
+      renderHistory();
+      showToast("히스토리에 현재 설정을 안전하게 보관했습니다.", "save");
+    }
+
+    function renderHistory() {
+      const container = document.getElementById('history-container');
+      const placeholder = document.getElementById('no-history-placeholder');
+
+      if (savedQRsList.length === 0) {
+        placeholder.classList.remove('hidden');
+        // Clear all elements except placeholder
+        const items = container.querySelectorAll('.history-item');
+        items.forEach(el => el.remove());
+        return;
+      }
+
+      placeholder.classList.add('hidden');
+      
+      // Clear previous elements
+      const items = container.querySelectorAll('.history-item');
+      items.forEach(el => el.remove());
+
+      savedQRsList.forEach(item => {
+        const itemEl = document.createElement('div');
+        itemEl.className = "history-item bg-slate-50 border border-slate-100 p-3 rounded-xl flex items-center justify-between gap-3 text-left hover:border-indigo-100 hover:bg-indigo-50/20 transition-all";
+        
+        let typeIcon = "link-2";
+        if (item.tabType === 'wifi') typeIcon = "wifi";
+        if (item.tabType === 'vcard') typeIcon = "user";
+        if (item.tabType === 'email') typeIcon = "mail";
+        if (item.tabType === 'sms') typeIcon = "message-square";
+
+        itemEl.innerHTML = `
+          <div class="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer" onclick="loadHistoryItem('${item.tabType}', '${encodeURIComponent(item.payload)}')">
+            <div class="p-1.5 bg-white border border-slate-200 text-slate-500 rounded-lg shrink-0">
+              <i data-lucide="${typeIcon}" class="w-3.5 h-3.5"></i>
+            </div>
+            <div class="min-w-0">
+              <p class="text-xs font-bold text-slate-800 truncate">${item.title}</p>
+              <p class="text-[10px] text-slate-400 font-medium">${item.createdTime} • 불러오기하려면 클릭</p>
+            </div>
+          </div>
+          <button onclick="deleteHistoryItem(${item.id})" class="text-slate-300 hover:text-red-500 p-1 rounded-lg hover:bg-white transition-colors shrink-0">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        `;
+        container.appendChild(itemEl);
+      });
+
+      // Rerender Lucide icons
+      lucide.createIcons();
+    }
+
+    function loadHistoryItem(tabType, encodedPayload) {
+      const decoded = decodeURIComponent(encodedPayload);
+      
+      // Move to correct tab
+      switchTab(tabType);
+
+      // Distribute payload back to fields depending on type
+      if (tabType === 'url') {
+        document.getElementById('input-url-text').value = decoded;
+      } else if (tabType === 'wifi') {
+        // Parsing WIFI:S:SSID;T:WPA;P:PASSWORD;H:true;;
+        const matchSSID = decoded.match(/S:([^;]+)/);
+        const matchPass = decoded.match(/P:([^;]+)/);
+        const matchType = decoded.match(/T:([^;]+)/);
+        const matchHidden = decoded.match(/H:([^;]+)/);
+
+        if (matchSSID) document.getElementById('input-wifi-ssid').value = matchSSID[1];
+        if (matchPass) document.getElementById('input-wifi-pass').value = matchPass[1];
+        if (matchType) document.getElementById('input-wifi-type').value = matchType[1];
+        if (matchHidden) document.getElementById('input-wifi-hidden').checked = (matchHidden[1] === 'true');
+      } else if (tabType === 'vcard') {
+        // Simple fill-back (or raw preview text can be populated)
+        // Since vCard is complex, we fill the first name as raw
+        document.getElementById('input-vcard-first').value = decoded;
+      } else if (tabType === 'email') {
+        // mailto:receiver@example.com?subject=...&body=...
+        const matchTo = decoded.match(/mailto:([^?]+)/);
+        const matchSub = decoded.match(/subject=([^&]+)/);
+        const matchBody = decoded.match(/body=([^&]+)/);
+
+        if (matchTo) document.getElementById('input-email-to').value = matchTo[1];
+        if (matchSub) document.getElementById('input-email-sub').value = decodeURIComponent(matchSub[1]);
+        if (matchBody) document.getElementById('input-email-body').value = decodeURIComponent(matchBody[1]);
+      } else if (tabType === 'sms') {
+        // smsto:tel:body
+        const parts = decoded.split(':');
+        if (parts.length >= 2) {
+          document.getElementById('input-sms-tel').value = parts[1];
+          document.getElementById('input-sms-body').value = parts.slice(2).join(':');
+        }
+      }
+
+      generateQR();
+      showToast("기록에서 QR 코드가 복원되었습니다.", "check");
+    }
+
+    function deleteHistoryItem(id) {
+      savedQRsList = savedQRsList.filter(item => item.id !== id);
+      saveHistoryToLocal();
+      renderHistory();
+      showToast("선택 항목 삭제 완료", "trash-2");
+    }
+
+    function clearHistory() {
+      savedQRsList = [];
+      saveHistoryToLocal();
+      renderHistory();
+      showToast("전체 히스토리 내역이 삭제되었습니다.", "trash");
+    }
+
+    // LocalStorage State persistence helper
+    function saveHistoryToLocal() {
+      try {
+        localStorage.setItem('qr_maker_history', JSON.stringify(savedQRsList));
+      } catch(e) {}
+    }
+
+    function loadHistoryFromLocal() {
+      try {
+        const str = localStorage.getItem('qr_maker_history');
+        if (str) {
+          savedQRsList = JSON.parse(str);
+          renderHistory();
+        }
+      } catch(e) {}
+    }
+
+    // Beautiful Custom Toast Notifications
+    function showToast(message, iconName = 'info') {
+      const toast = document.getElementById('toast-message');
+      const toastText = document.getElementById('toast-text');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastText.innerText = message;
+      toastIcon.setAttribute('data-lucide', iconName);
+      
+      // Redraw toast icon
+      lucide.createIcons({
+        attrs: {
+          class: 'w-4 h-4'
+        },
+        nameAttr: 'data-lucide'
+      });
+
+      // Animate In
+      toast.classList.remove('translate-y-16', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      // Dismiss after 3s
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-16', 'opacity-0');
+      }, 3500);
+    }
+  </script>
+</body>
+</html>
